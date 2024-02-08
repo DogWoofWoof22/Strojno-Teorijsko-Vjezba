@@ -7,4 +7,7 @@ while True:
     print(mode)
     if mode == "Data Source":
         menu.FilePathInput()
-        print(menu.FilePath)
+    elif mode == "Topics":
+        menu.TopicSelection()
+    elif mode == "Mode":
+        menu.ModeSelection()

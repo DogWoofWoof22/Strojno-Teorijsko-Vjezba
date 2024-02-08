@@ -2,11 +2,24 @@ import pygame
 import tkinter
 import tkinter.filedialog
 import sys
+import os
 from pygame.rect import Rect
 
 class Menu:
     def __init__(self) -> None:
-        pass
+        self.FilePath = ""
+        self.Mode = ""
+        self.scroll_y = 0
+        self.Topics = []
+
+    def SelectAllTopics(self,topics):
+        self.Topics = topics
+
+    def SelectTopic(self,topic):
+        self.Topics.append(topic)
+
+    def RemoveTopic(self,topic):
+        self.Topics.remove(topic)
 
     def PromptFile(self):
         top = tkinter.Tk()
@@ -20,10 +33,11 @@ class Menu:
 
             buttonData = button[0]
             buttonAction = button[1]
+            buttonArgs = button[2]
 
-            if buttonData.left <= self.mousePosition[0] <= buttonData.right and buttonData.top <= self.mousePosition[1] <= buttonData.bottom: 
+            if buttonData.left <= self.mousePosition[0] <= buttonData.right and buttonData.top+self.scroll_y <= self.mousePosition[1] <= buttonData.bottom + self.scroll_y: 
                 
-                return buttonAction()
+                return buttonAction(buttonArgs)
 
     def QuitGameReturnPressedButton(self,buttonName = None):
         self.run = False
@@ -33,7 +47,7 @@ class Menu:
     
     def DrawButtonWithText(self,screen,x_pos,y_pos,width,height,primaryColor,hoverColor,text):
 
-        if x_pos <= self.mousePosition[0] <= x_pos+width and y_pos <= self.mousePosition[1] <= y_pos+height: 
+        if x_pos <= self.mousePosition[0] <= x_pos+width and y_pos+self.scroll_y <= self.mousePosition[1] <= y_pos+height+self.scroll_y: 
             rect = pygame.draw.rect(screen,hoverColor,[x_pos,y_pos,width,height]) 
         else: 
             rect = pygame.draw.rect(screen,primaryColor,[x_pos,y_pos,width,height])
@@ -88,22 +102,39 @@ class Menu:
 
                     returnData = self.MouseDownEvent(buttons)
                         
-
+            buttons.clear()
                         
             screen.fill((0,0,0)) 
             self.mousePosition = pygame.mouse.get_pos()
 
             #Create data source button
-            buttons.append([self.DrawButtonWithText(screen,0,0,200,40,(255,255,255),(200,200,200),"Choose Data Source"),lambda: self.QuitGameReturnPressedButton("Data Source")])
+            if self.FilePath == "":
+                buttons.append([self.DrawButtonWithText(screen,0,0,200,40,(255,255,255),(200,200,200),"Choose Data Source"),lambda x: self.QuitGameReturnPressedButton("Data Source"),None])
+            else:
+                buttons.append([self.DrawButtonWithText(screen,0,0,200,40,(111,194,118),(200,200,200),"Choose Data Source"),lambda x: self.QuitGameReturnPressedButton("Data Source"),None])
 
             #Create topics button
-            buttons.append([self.DrawButtonWithText(screen,0,40,200,40,(255,255,255),(200,200,200),"Choose Topics"),lambda: self.QuitGameReturnPressedButton("Topics")])
+            if self.FilePath == "":
+                buttons.append([self.DrawButtonWithText(screen,0,40,200,40,(255,155,155),(200,200,200),"Choose Topics"),lambda x: x,None])
+            elif len(self.Topics) == 0:
+                buttons.append([self.DrawButtonWithText(screen,0,40,200,40,(255,255,255),(200,200,200),"Choose Topics"),lambda x: self.QuitGameReturnPressedButton("Topics"),None])
+            else:
+                buttons.append([self.DrawButtonWithText(screen,0,40,200,40,(111,194,118),(200,200,200),"Choose Topics"),lambda x: self.QuitGameReturnPressedButton("Topics"),None])
 
             #Create mode button
-            buttons.append([self.DrawButtonWithText(screen,0,80,200,40,(255,255,255),(200,200,200),"Choose Mode"),lambda: self.QuitGameReturnPressedButton("Mode")])
+            if self.FilePath == "":
+                buttons.append([self.DrawButtonWithText(screen,0,80,200,40,(255,155,155),(200,200,200),"Choose Mode"),lambda x: x,None])
+            elif self.Mode == "":
+                buttons.append([self.DrawButtonWithText(screen,0,80,200,40,(255,255,255),(200,200,200),"Choose Mode"),lambda x: self.QuitGameReturnPressedButton("Mode"),None])
+            else:
+                buttons.append([self.DrawButtonWithText(screen,0,80,200,40,(111,194,118),(200,200,200),"Choose Mode"),lambda x: self.QuitGameReturnPressedButton("Mode"),None])
+            
 
             #Create start button
-            buttons.append([self.DrawButtonWithText(screen,0,120,200,40,(255,255,255),(200,200,200),"Start"),lambda: self.QuitGameReturnPressedButton("Start")])
+            if self.Mode == "" or len(self.Topics) == 0:
+                buttons.append([self.DrawButtonWithText(screen,0,120,200,40,(255,155,155),(200,200,200),"Start"),lambda x: x,None])
+            else:
+                buttons.append([self.DrawButtonWithText(screen,0,120,200,40,(255,255,255),(200,200,200),"Start"),lambda x: self.QuitGameReturnPressedButton("Start"),None])
             
             pygame.display.update()
         
@@ -132,7 +163,8 @@ class Menu:
                 if ev.type == pygame.KEYDOWN: 
                     if ev.key == pygame.K_RETURN:
                         self.run = False
-                        
+            
+            buttons.clear()
             screen.fill((0,0,0)) 
             self.mousePosition = pygame.mouse.get_pos()
 
@@ -140,27 +172,100 @@ class Menu:
             self.CenterInfoText(screen,30,20,"Please select data source :")
             self.CenterInfoText(screen,50,20,self.FilePath)
 
-            #Create data source button
-            buttons.append([self.DrawButtonWithText(screen,50,130,200,40,(255,255,255),(200,200,200),"Select File"),lambda: self.PromptFile()])
+            #Create select file button
+            buttons.append([self.DrawButtonWithText(screen,50,130,200,40,(255,255,255),(200,200,200),"Select Directory"),lambda x: self.PromptFile(),None])
 
-            #Create topics button
-            buttons.append([self.DrawButtonWithText(screen,50,170,200,40,(255,255,255),(200,200,200),"Done"),lambda: self.QuitGameReturnPressedButton("Topics")])
+            #Create done button
+            buttons.append([self.DrawButtonWithText(screen,50,170,200,40,(255,255,255),(200,200,200),"Done"),lambda x: self.QuitGameReturnPressedButton(),None])
 
-            '''if 130 < mouse[1] <= 170: 
-                pygame.draw.rect(screen,(200,200,200),[55,130,200,40]) 
-            else: 
-                pygame.draw.rect(screen,(255,255,255),[55,130,200,40])
-            screen.blit(pygame.font.SysFont('Corbel',20).render('Select File' , True , (0,0,0)) , (120,140)) 
-
-            if 170 < mouse[1] <= 210: 
-                pygame.draw.rect(screen,(200,200,200),[55,170,200,40]) 
-            else: 
-                pygame.draw.rect(screen,(255,255,255),[55,170,200,40])
-            screen.blit(pygame.font.SysFont('Corbel',20).render('Done' , True , (0,0,0)) , (130,180))
-            '''
             pygame.display.flip()
         
         pygame.quit()
-        return self.FilePath
+        return
+    
+    def TopicSelection(self):
+        allTopics = [os.path.split(x[0])[-1] for x in os.walk(self.FilePath)][1:]
+        pygame.init()
+        display = (500, 500)
+        intermediate = pygame.surface.Surface((500, (len(allTopics)+2)*40))
+        screen = pygame.display.set_mode(display)
+        self.run = True
+        buttons = []
+        self.scroll_y = 0
+        while self.run:
+
+            for ev in pygame.event.get(): 
+          
+                if ev.type == pygame.QUIT:
+                    
+                    self.run = False
+                    pygame.quit()
+                    sys.exit()
+                    
+                if ev.type == pygame.MOUSEBUTTONDOWN:  
+                    if ev.button == 1:
+                        returnData = self.MouseDownEvent(buttons)
+                    if ev.button == 4:
+                        self.scroll_y = min(self.scroll_y + 15, 0)
+                    if ev.button == 5:
+                        self.scroll_y = max(self.scroll_y - 15, -300)
+
+            buttons.clear()
+                        
+            screen.fill((0,0,0)) 
+            self.mousePosition = pygame.mouse.get_pos()
+
+            buttons.append([self.DrawButtonWithText(intermediate,0,0,500,40,(255,255,255),(200,200,200),"Done"),lambda x: self.QuitGameReturnPressedButton(),None])
+              
+            buttons.append([self.DrawButtonWithText(intermediate,0,40,500,40,(255,255,255),(200,200,200),"SelectAll"),lambda x: self.SelectAllTopics(allTopics.copy()),None])
+                
+            buttonHeight = 80
+            for topic in allTopics:
+                if topic in self.Topics:
+                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(111,194,118),(200,200,200),topic),lambda x: self.RemoveTopic(x),topic])
+                else:
+                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(255,255,255),(200,200,200),topic),lambda x: self.SelectTopic(x),topic])
+                buttonHeight+=40
+
+            screen.blit(intermediate, (0, self.scroll_y))
+            pygame.display.update()
+        
+        pygame.quit()
+
+    def ModeSelection(self):
+        pygame.init()
+        display = (300, 300)
+        screen = pygame.display.set_mode(display)
+        self.run = True
+        buttons = []
+        self.scroll_y = 0
+        while self.run:
+
+            for ev in pygame.event.get(): 
+          
+                if ev.type == pygame.QUIT:
+                    
+                    self.run = False
+                    pygame.quit()
+                    sys.exit()
+                    
+                if ev.type == pygame.MOUSEBUTTONDOWN:  
+                    if ev.button == 1:
+                        self.Mode = self.MouseDownEvent(buttons)
+
+            buttons.clear()
+                        
+            screen.fill((0,0,0)) 
+            self.mousePosition = pygame.mouse.get_pos()
+
+            buttons.append([self.DrawButtonWithText(screen,0,0,300,40,(255,255,255),(200,200,200),"All Ordered"),lambda x: self.QuitGameReturnPressedButton("All Ordered"),None])
+              
+            buttons.append([self.DrawButtonWithText(screen,0,40,300,40,(255,255,255),(200,200,200),"All Random"),lambda x: self.QuitGameReturnPressedButton("All Random"),None])
+            
+            buttons.append([self.DrawButtonWithText(screen,0,80,300,40,(255,255,255),(200,200,200),"Test Like"),lambda x: self.QuitGameReturnPressedButton("Test Like"),None])
+                
+            pygame.display.update()
+        
+        pygame.quit()
 
     

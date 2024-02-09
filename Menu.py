@@ -1,8 +1,10 @@
+import random
 import pygame
 import tkinter
 import tkinter.filedialog
 import sys
 import os
+import glob
 from pygame.rect import Rect
 
 class Menu:
@@ -11,6 +13,8 @@ class Menu:
         self.Mode = ""
         self.scroll_y = 0
         self.Topics = []
+        self.Data = []
+        self.Answers = []
 
     def SelectAllTopics(self,topics):
         self.Topics = topics
@@ -184,7 +188,7 @@ class Menu:
         return
     
     def TopicSelection(self):
-        allTopics = [os.path.split(x[0])[-1] for x in os.walk(self.FilePath)][1:]
+        allTopics = [x[0] for x in os.walk(self.FilePath)][1:]
         pygame.init()
         display = (500, 500)
         intermediate = pygame.surface.Surface((500, (len(allTopics)+2)*40))
@@ -222,9 +226,9 @@ class Menu:
             buttonHeight = 80
             for topic in allTopics:
                 if topic in self.Topics:
-                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(111,194,118),(200,200,200),topic),lambda x: self.RemoveTopic(x),topic])
+                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(111,194,118),(200,200,200),os.path.split(topic)[-1]),lambda x: self.RemoveTopic(x),topic])
                 else:
-                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(255,255,255),(200,200,200),topic),lambda x: self.SelectTopic(x),topic])
+                    buttons.append([self.DrawButtonWithText(intermediate,0,buttonHeight,500,40,(255,255,255),(200,200,200),os.path.split(topic)[-1]),lambda x: self.SelectTopic(x),topic])
                 buttonHeight+=40
 
             screen.blit(intermediate, (0, self.scroll_y))
@@ -267,5 +271,120 @@ class Menu:
             pygame.display.update()
         
         pygame.quit()
+
+    def GetData(self):
+
+        for topicPath in self.Topics:
+            
+            topicData = [os.path.abspath(x) for x in glob.glob(topicPath+"\\**\\*.png", recursive=True)]
+            answersFile = open(topicPath + "\\Answers.txt",'r')
+            answerData = [x.strip() for x in answersFile.readlines()]
+            self.Data.append(topicData)
+            self.Answers.append(answerData)
+
+    def Quizlet(self):
+        if self.Mode == "All Ordered":
+            for topicIndex,topic in enumerate(self.Data):
+                for questionIndex,question in enumerate(topic):
+                    self.correctAnswer = self.Answers[topicIndex][questionIndex]
+                    self.selectedAnswer = None
+                    self.AskQuestion(question)
+
+        if self.Mode == "All Random":
+            while any(self.Data):
+                topicIndex = random.randint(0, len(self.Data)-1)
+                topic = self.Data[topicIndex]
+                questionIndex = random.randint(0, len(topic)-1)
+                question = topic[questionIndex]
+                self.correctAnswer = self.Answers[topicIndex][questionIndex]
+                self.selectedAnswer = None
+                self.AskQuestion(question)
+                self.Data[topicIndex].remove(question)
+
+        if self.Mode == "Test Like":
+            for topicIndex,topic in enumerate(self.Data):
+                numberOfQuesitons = random.randint(1, 2)
+                for i in range(0,numberOfQuesitons):
+                    questionIndex = random.randint(0, len(topic)-1)
+                    question = topic[questionIndex]
+                    self.correctAnswer = self.Answers[topicIndex][questionIndex]
+                    self.selectedAnswer = None
+                    self.AskQuestion(question)
+                    self.Data[topicIndex].remove(question)
+
+
+    def AskQuestion(self,question):
+        pygame.init()
+        display = (1100, 700)
+        screen = pygame.display.set_mode(display)
+        self.run = True
+        buttons = []
+        while self.run:
+
+            for ev in pygame.event.get(): 
+          
+                if ev.type == pygame.QUIT:
+                    
+                    self.run = False
+                    pygame.quit()
+                    sys.exit()
+                    
+                if ev.type == pygame.MOUSEBUTTONDOWN:  
+                    if ev.button == 1:
+                        returnData = self.MouseDownEvent(buttons)
+
+            buttons.clear()
+                        
+            screen.fill((0,0,0)) 
+            self.mousePosition = pygame.mouse.get_pos()
+
+            
+            picture = pygame.image.load(question)
+            picture = pygame.transform.scale(picture, (900, 500))
+            rect = picture.get_rect(centerx = screen.get_rect().centerx, centery = 300)
+            screen.blit(picture, rect)
+
+            if self.selectedAnswer == None or (self.selectedAnswer != "A" and self.correctAnswer != "A"):
+                buttons.append([self.DrawButtonWithText(screen,10,600,200,100,(255,255,255),(100,136,234),"A"),lambda x: self.SelectAnswer("A"), None])
+            elif self.selectedAnswer == "A" and self.correctAnswer != "A":
+                buttons.append([self.DrawButtonWithText(screen,10,600,200,100,(255,155,155),(255,155,155),"A"),lambda x: self.SelectAnswer("A"), None])
+            elif self.correctAnswer == "A":
+                buttons.append([self.DrawButtonWithText(screen,10,600,200,100,(111,194,118),(111,194,118),"A"),lambda x: self.SelectAnswer("A"), None])
+            
+
+            
+            if self.selectedAnswer == None or (self.selectedAnswer != "B" and self.correctAnswer != "B"):
+                buttons.append([self.DrawButtonWithText(screen,230,600,200,100,(255,255,255),(100,136,234),"B"),lambda x: self.SelectAnswer("B"), None])
+            elif self.selectedAnswer == "B" and self.correctAnswer != "B":
+                buttons.append([self.DrawButtonWithText(screen,230,600,200,100,(255,155,155),(255,155,155),"B"),lambda x: self.SelectAnswer("B"), None])
+            elif self.correctAnswer == "B":
+                buttons.append([self.DrawButtonWithText(screen,230,600,200,100,(111,194,118),(111,194,118),"B"),lambda x: self.SelectAnswer("B"), None])
+            
+            if self.selectedAnswer == None or (self.selectedAnswer != "C" and self.correctAnswer != "C"):
+                buttons.append([self.DrawButtonWithText(screen,450,600,200,100,(255,255,255),(100,136,234),"C"),lambda x: self.SelectAnswer("C"), None])
+            elif self.selectedAnswer == "C" and self.correctAnswer != "C":
+                buttons.append([self.DrawButtonWithText(screen,450,600,200,100,(255,155,155),(255,155,155),"C"),lambda x: self.SelectAnswer("C"), None])
+            elif self.correctAnswer == "C":
+                buttons.append([self.DrawButtonWithText(screen,450,600,200,100,(111,194,118),(111,194,118),"C"),lambda x: self.SelectAnswer("C"), None])
+            
+            if self.selectedAnswer == None or (self.selectedAnswer != "D" and self.correctAnswer != "D"):
+                buttons.append([self.DrawButtonWithText(screen,670,600,200,100,(255,255,255),(100,136,234),"D"),lambda x: self.SelectAnswer("D"), None])
+            elif self.selectedAnswer == "D" and self.correctAnswer != "D":
+                buttons.append([self.DrawButtonWithText(screen,670,600,200,100,(255,155,155),(255,155,155),"D"),lambda x: self.SelectAnswer("D"), None])
+            elif self.correctAnswer == "D":
+                buttons.append([self.DrawButtonWithText(screen,670,600,200,100,(111,194,118),(111,194,118),"D"),lambda x: self.SelectAnswer("D"), None])
+            
+            
+            buttons.append([self.DrawButtonWithText(screen,890,600,200,100,(255,255,255),(100,136,234),"Next"),lambda x: self.NextQuestion(), None])
+
+            pygame.display.update()
+        
+        pygame.quit()
+
+    def SelectAnswer(self,answer):
+        self.selectedAnswer = answer
+    
+    def NextQuestion(self):
+        self.run = False
 
     

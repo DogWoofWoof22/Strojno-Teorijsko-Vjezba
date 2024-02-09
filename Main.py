@@ -11,3 +11,6 @@ while True:
         menu.TopicSelection()
     elif mode == "Mode":
         menu.ModeSelection()
+    elif mode == "Start":
+        menu.GetData()
+        menu.Quizlet()

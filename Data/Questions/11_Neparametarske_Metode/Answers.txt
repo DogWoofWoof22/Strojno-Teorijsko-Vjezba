@@ -1,1 +1,4 @@
-C C B C
+C
+C
+B
+C

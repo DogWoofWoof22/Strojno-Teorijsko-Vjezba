@@ -273,7 +273,7 @@ class Menu:
         pygame.quit()
 
     def GetData(self):
-
+        self.counter = 0
         for topicPath in self.Topics:
             
             topicData = [os.path.abspath(x) for x in glob.glob(topicPath+"\\**\\*.png", recursive=True)]
@@ -286,14 +286,20 @@ class Menu:
         if self.Mode == "All Ordered":
             for topicIndex,topic in enumerate(self.Data):
                 for questionIndex,question in enumerate(topic):
+                    
+                    self.counter += 1
                     self.correctAnswer = self.Answers[topicIndex][questionIndex]
                     self.selectedAnswer = None
                     self.AskQuestion(question)
 
         if self.Mode == "All Random":
             while any(self.Data):
+                self.counter += 1
                 topicIndex = random.randint(0, len(self.Data)-1)
                 topic = self.Data[topicIndex]
+                while not any(topic):
+                    topicIndex = random.randint(0, len(self.Data)-1)
+                    topic = self.Data[topicIndex]
                 questionIndex = random.randint(0, len(topic)-1)
                 question = topic[questionIndex]
                 self.correctAnswer = self.Answers[topicIndex][questionIndex]
@@ -305,6 +311,7 @@ class Menu:
             for topicIndex,topic in enumerate(self.Data):
                 numberOfQuesitons = random.randint(1, 2)
                 for i in range(0,numberOfQuesitons):
+                    self.counter += 1
                     questionIndex = random.randint(0, len(topic)-1)
                     question = topic[questionIndex]
                     self.correctAnswer = self.Answers[topicIndex][questionIndex]
@@ -338,6 +345,8 @@ class Menu:
             screen.fill((0,0,0)) 
             self.mousePosition = pygame.mouse.get_pos()
 
+            buttons.append([self.DrawButtonWithText(screen,0,0,20,20,(255,255,255),(100,136,234),str(self.counter)),lambda x: x, None])
+            
             
             picture = pygame.image.load(question)
             picture = pygame.transform.scale(picture, (900, 500))

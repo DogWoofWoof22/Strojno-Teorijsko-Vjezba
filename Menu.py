@@ -305,7 +305,8 @@ class Menu:
                 self.correctAnswer = self.Answers[topicIndex][questionIndex]
                 self.selectedAnswer = None
                 self.AskQuestion(question)
-                self.Data[topicIndex].remove(question)
+                self.Data[topicIndex].pop(questionIndex)
+                self.Answers[topicIndex].pop(questionIndex)
 
         if self.Mode == "Test Like":
             for topicIndex,topic in enumerate(self.Data):
